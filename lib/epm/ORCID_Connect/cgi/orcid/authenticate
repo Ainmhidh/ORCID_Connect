@@ -1,0 +1,290 @@
+#!/usr/bin/perl
+
+use strict;
+use EPrints;
+use CGI qw(:standard);
+use LWP::UserAgent;
+use HTTP::Request::Common;
+#use HTTP::Response;
+use JSON;
+use Data::Dumper;
+use Digest::MD5 qw(md5 md5_hex md5_base64);
+use URI::Escape;
+
+
+# New session
+my $repo = new EPrints::Session;
+exit( 0 ) unless( defined $repo );
+
+my $authcode = $repo->param("code");
+my $state = $repo->param("state");
+my $error = $repo->param("error");
+my $error_desc = $repo->param("error_description");
+
+if( defined( $error ) && defined( $state ))
+{
+	#get current user record
+	my $current_user = $repo->current_user();
+
+	#check request was sent for this user with the returned state
+	#using direct SQL as indexing not fast enough for search to have worked.
+	my $db = $repo->database;
+	my $sth = $db->prepare_select( "SELECT id FROM orcid_log WHERE user =".$db->quote_int($current_user->get_value( "userid" ))." AND state =".$db->quote_value( $state ) );
+	my $success = $sth->execute;
+	if ( $success ne "1" )
+	{
+		#Throw a wobbly as the request can't be found
+#TODO: make this an error warning page 
+		$db->save_user_message($current_user->get_value( "userid" ),
+							"error",
+							$repo->html_phrase("Plugin/Screen/ORCID:failed_creating_orcid_link",
+							("message"=>$repo->xml->create_text_node("Could not find matching unprocessed request sent to ORCID"))
+					)
+			);
+		$repo->redirect( $repo->config( 'userhome' )."?screen=ORCID" );
+#		$repo->terminate;
+		exit;
+		#Shouldn't get here
+#		print "No match for original request ID\n";
+	}
+	else
+	{
+		#Matching request found - update the record so it only gets counted once
+		my $row = $sth->fetchrow_arrayref->[0];
+		
+		$success = $db->do( "UPDATE orcid_log SET state =".$db->quote_value( $state."DENIED".$error_desc )." WHERE id = $row");
+		
+		$db->save_user_message($current_user->get_value( "userid" ),
+							"warning",
+							$repo->html_phrase("Plugin/Screen/ORCID:denied_creating_orcid_link",
+							("message"=>$repo->xml->create_text_node("'".uri_unescape($error_desc)."'"))
+					)
+			);
+		$repo->redirect( $repo->config( 'userhome' )."?screen=ORCID" );
+#		$repo->terminate;
+		exit;
+		#Shouldn't get here
+#		print "ORCID authorisation request denied.\n";
+
+	}
+}
+
+if( defined( $authcode ) && defined( $state ) )
+{
+	#get current user record
+	my $current_user = $repo->current_user();
+
+	#check request was sent for this user with the returned state
+	#using direct SQL as indexing not fast enough for search to have worked.
+	my $db = $repo->database;
+	my $sth = $db->prepare_select( "SELECT id FROM orcid_log WHERE user =".$db->quote_int($current_user->get_value( "userid" ))." AND state =".$db->quote_value( $state ) );
+	my $success = $sth->execute;
+	if ( $success ne "1" )
+	{
+		#Throw a wobbly as the request can't be found
+#TODO: make this an error warning page 
+		print "No match\n";
+	}
+	else
+	{
+		#Matching request found - update the record so it only gets counted once
+		my $row = $sth->fetchrow_arrayref->[0];
+		
+		$success = $db->do( "UPDATE orcid_log SET state =".$db->quote_value( $state."PROCESSED" )." WHERE id = $row");
+		
+		#update the user record with the auth code, before we try to exchange it for a token, in case something goes awry.
+		
+		$current_user->set_value( "orcid_auth_code", $authcode );
+		$current_user->commit();
+
+		#Now, exchange the auth code for the Access Token
+		my $exchange_uri = $repo->config( "plugins" )->{"Screen::ORCID"}->{"params"}->{"orcid_org_exch_uri"};
+
+		my $ua = LWP::UserAgent->new;
+		$ua->env_proxy;
+		
+		$ua->proxy('https',$repo->config( "plugins" )->{"Screen::ORCID"}->{"params"}->{"https_proxy"}); #'https://wwwcache.open.ac.uk:80/');
+		$ua->proxy('http',$repo->config( "plugins" )->{"Screen::ORCID"}->{"params"}->{"http_proxy"}); #'http://wwwcache.open.ac.uk:80/');
+		my $request = POST($exchange_uri,
+			[
+				"client_id"	=> $repo->config( "plugins" )->{"Screen::ORCID"}->{"params"}->{"client_id"},
+				"client_secret"	=> $repo->config( "plugins" )->{"Screen::ORCID"}->{"params"}->{"client_secret"},
+				"grant_type"	=> "authorization_code",
+				"code"		=> $authcode,
+				"redirect_uri"	=> $repo->config( "plugins" )->{"Screen::ORCID"}->{"params"}->{"redirect_uri"},
+			] );
+		$request->header( "accept" => "application/json" );
+
+		#Record query being sent for access token in the orcid_log 
+		my $log_ds = $repo->dataset( "orcid_log" );
+		my $datestamp =  EPrints::Time::datetime_utc(EPrints::Time::utc_datetime());
+		my $state = $current_user->get_value( "userid" ).$authcode.$datestamp;
+		my $log_entry = $log_ds->create_dataobj({
+						"user"=>$current_user->get_value( "userid" ), 
+						"state"=>"EXCHANGEREQUEST_".$state,
+						"request_time"=>$datestamp,
+						"query"=>$request->uri."?".$request->content,
+				});
+		$log_entry->commit();
+
+		my $response = $ua->request($request);
+
+		if( $response->is_success )
+		{
+		#Save the query response content to the orcid_log, with userid, timestamp and same garbage state as used earlier.
+			$log_entry = $log_ds->create_dataobj({
+						"user"=>$current_user->get_value( "userid" ), 
+						"state"=>"EXCHANGERESPONSE_".$state,
+						"request_time"=>EPrints::Time::datetime_utc(EPrints::Time::utc_datetime()),
+						"query"=>$response->code."\n".$response->content,
+					});
+			$log_entry->commit();
+
+			#process the response and apply the details to the user record
+			my $json = new JSON;
+			my $json_text = $json->utf8->decode($response->content);
+			$current_user->set_value( "orcid", $json_text->{"orcid"});
+			$current_user->set_value( "orcid_auth_code", $json_text->{"access_token"});
+			$current_user->set_value( "orcid_granted_permissions", $json_text->{"scope"});
+			#convert the expires in duration to a stated future timepoint
+			my $expiry_date = EPrints::Time::datetime_utc(EPrints::Time::utc_datetime());
+			$expiry_date += $json_text->{"expires_in"};
+			$current_user->set_value( "orcid_token_expires", EPrints::Time::iso_datetime($expiry_date));
+			$current_user->commit();
+
+			#Flag a message to the user to indicate the success of linking to ORCID
+			$db->save_user_message($current_user->get_value( "userid" ),
+					"message", 
+					$repo->html_phrase("Plugin/Screen/ORCID:created_orcid_link",
+							("name"=>$current_user->render_value( "name" ))
+					)
+			);
+
+			#Create an Event to pull details from user's ORCID record into ORO
+#				$repo->dataset( "event_queue" )->create_dataobj({
+#					pluginid => "Event::OrcidSync",
+#					action => "update_all_publications_for_user",
+#					params => ["/id/user/".$current_user->get_value( "userid" )],
+#				});
+
+			#Create an Event to update user affiliation details to ORCID, if we have the granted permission
+#			if( $json_text->{"scope"} =~ m#/affiliations/update# )
+			if( $json_text->{"scope"} =~ m#/orcid-bio/update# )
+			{
+				$repo->dataset( "event_queue" )->create_dataobj({
+					pluginid => "Event::OrcidSync",
+					action => "update_affiliation",
+					params => ["/id/user/".$current_user->get_value( "userid" )],
+				});
+			}
+			
+			#Create an Event to update user publication list to ORCID
+#			if( $json_text->{"scope"} =~ m#/orcid-works/update# )
+			if( $json_text->{"scope"} =~ m#/activities/update# )
+			{
+				$repo->dataset( "event_queue" )->create_dataobj({
+					pluginid => "Event::OrcidSync",
+					action => "update_all_works_for_user",
+					params => ["/id/user/".$current_user->get_value( "userid" )],
+				});
+			}
+
+			# Now check whether we can implement web-hooks
+			my $webhook_token = $repo->config( "plugins" )->{"Screen::ORCID"}->{"params"}->{"webhook_token"};
+			if( !defined($webhook_token) )
+			{
+				#No web-hook token defined so try to register one.
+		                my $request = POST($exchange_uri,
+			                        [
+			                                "client_id"     => $repo->config( "plugins" )->{"Screen::ORCID"}->{"params"}->{"client_id"},
+			                                "client_secret" => $repo->config( "plugins" )->{"Screen::ORCID"}->{"params"}->{"client_secret"},
+			                                "grant_type"    => "client_credentials",
+			                                "scope"          => "/webhook",
+			                        ] );
+		                $request->header( "accept" => "application/json" );
+
+		                #Record query being sent for webhook token in the orcid_log
+                                my $log_ds = $repo->dataset( "orcid_log" );
+                                my $datestamp =  EPrints::Time::datetime_utc(EPrints::Time::utc_datetime());
+                                my $state = $datestamp;
+                                my $log_entry = $log_ds->create_dataobj({
+	                                "user"=>$current_user->get_value( "userid" ),
+					"state"=>"WEBHOOKREQUEST_".$state,
+					"request_time"=>$datestamp,
+					"query"=>$request->uri."?".$request->content,
+					});
+				$log_entry->commit();
+
+				$response = $ua->request($request);
+		                if( $response->is_success )
+		                {
+		                #Save the query response content to the orcid_log, with userid, timestamp and same garbage state as used earlier.
+					$log_entry = $log_ds->create_dataobj({
+							"user"=>$current_user->get_value( "userid" ),
+							"state"=>"WEBHOOKRESPONSE_".$state,
+							"request_time"=>EPrints::Time::datetime_utc(EPrints::Time::utc_datetime()),
+							"query"=>$response->code."\n".$response->content,
+							});
+					$log_entry->commit();
+					#process the response and store the webhook token
+					$json = new JSON;
+					$json_text = $json->utf8->decode($response->content);
+					$repo->config( "plugins" )->{"Screen::ORCID"}->{"params"}->{"webhook_token"} = $json_text->{"access_token"};
+		                        my $webhook_expiry_date = EPrints::Time::datetime_utc(EPrints::Time::utc_datetime());
+		                        $webhook_expiry_date += $json_text->{"expires_in"};
+					$webhook_expiry_date = EPrints::Time::iso_datetime($webhook_expiry_date);
+
+					# Now save the token in the customisable config file
+					my $ofh = undef;
+					open ($ofh, ">>:encoding(UTF-8)", $repo->config('archiveroot')."/cfg/cfg.d/zzz_orcid_local.pl");
+					if( defined( $ofh ) )
+					{
+						print $ofh "\n#Webhook token created by ORCID plugin. Expires $webhook_expiry_date";
+						print $ofh "\n#To remove token, delete these comment lines and the webhook_token config line below\n";
+						print $ofh "\$c->{\"plugins\"}{\"Screen::ORCID\"}{\"params\"}{\"webhook_token\"} = \"".$json_text->{"access_token"}."\";\n";
+						print $ofh "\$c->{\"plugins\"}{\"Screen::ORCID\"}{\"params\"}{\"webhook_salt\"} = \"".md5_hex($webhook_expiry_date)."\";\n";
+						close($ofh);
+						$webhook_token = $json_text->{"access_token"};
+						$repo->config( "plugins" )->{"Screen::ORCID"}->{"params"}->{"webhook_salt"} = md5_hex($webhook_expiry_date);
+					}
+				}
+			}
+			#If we have a webhook token, register a webhook for the user
+			if( defined( $webhook_token ) )
+			{
+							
+			}
+#
+#TODO: something about triggers on new/edited eprints to update details on ORCID?
+#
+			$repo->redirect( $repo->config( 'userhome' ) );
+			$repo->terminate;
+			exit;
+		}		
+		else
+		{
+			#Response not a success so log it --- TODO: create an event to retry the exchange.
+			my $log_entry = $log_ds->create_dataobj({
+						"user"=>$current_user->get_value( "userid" ), 
+						"state"=>"EXCHANGERESPONSE_".$state,
+						"request_time"=>EPrints::Time::datetime_utc(EPrints::Time::utc_datetime()),
+						"query"=>$response->status_line."\n".$response->content,
+					});
+			$log_entry->commit();
+			#Flag a message to the user to indicate the success of linking to ORCID
+			$db->save_user_message($current_user->get_value( "userid" ),
+					"error", 
+					$repo->html_phrase("Plugin/Screen/ORCID:failed_creating_orcid_link",
+							("message"=>$response->status_line)
+					)
+			);
+			$repo->redirect( $repo->config( 'userhome' ) );
+			$repo->terminate;
+
+		}
+	}
+	return;
+}
+print header( content_type => "text/html");
+print ("<html><head><title>".EPrints::Utils::tree_to_utf8($repo->html_phrase("archive_name"))." - Error</title></head><body><p>Bad parameters in call. This page is not intended to be visited manually. Return to <a href='".$repo->{ "config" }->{ "base_url" }."'>". EPrints::Utils::tree_to_utf8($repo->html_phrase("archive_name"))." home page</a></p></body></html>");
+

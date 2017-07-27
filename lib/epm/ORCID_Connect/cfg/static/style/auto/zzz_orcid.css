@@ -1,0 +1,92 @@
+option.with_orcid {
+	font-weight: bold;
+}
+
+option.current {
+	color: white;
+	background-color: black;
+	margin-left: 20px;
+}
+
+span.expiry_date {
+	font-weight: bold;
+}
+
+div.permission_description {
+	font-size: 0.95em;
+	margin-left: 30px;
+	margin-bottom: 10px;
+}
+
+ul.permissions_list {
+	font-style: italic;
+}
+
+ul.permissions_list li{
+	margin:5px;
+}
+
+div.orcid_id_display {
+	margin: 10px;
+	text-align: center;
+	font-weight: bolder;
+}
+div.orcid_id_display a img {
+	vertical-align: middle;
+	margin: 10px;
+}
+
+div.local_perms_div {
+	margin-top: 10px;
+}
+
+button.ep_form_action_button {
+	display: block;
+	margin: auto;
+
+}
+
+#connect-orcid-button{
+	display: block;
+	margin: auto;
+	border: 1px solid #D3D3D3;
+	padding: .3em;
+	background-color: #fff;
+	border-radius: 8px;
+	box-shadow: 1px 1px 3px #999;
+	cursor: pointer;
+	color: #999;
+	font-weight: bold;
+	font-size: .95em;
+	line-height: 24px;
+	vertical-align: middle;
+}
+
+#connect-orcid-button:hover{
+	border: 1px solid #338caf;
+	color: #338caf;
+}
+
+#orcid-id-logo{
+	display: block;
+	margin: 0 .5em 0 0;
+	padding: 0;
+	float: left;
+}
+
+.disabled{
+	color: #555555;
+	text-decoration: line-through;
+}
+
+.ep_form_action_button.danger{
+	background-color: #b11;
+	border-color: #d55 #900 #900 #d55;
+	margin-top: 25px;
+	margin-bottom: 25px;
+}
+
+.ep_form_action_button.danger:active{
+	background-color: #e22;
+	border-color: #900 #d55 #d55 #900;
+}

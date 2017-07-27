@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE phrases SYSTEM "entities.dtd">
+
+<epp:phrases xmlns="http://www.w3.org/1999/xhtml" xmlns:epp="http://eprints.org/ep3/phrase" xmlns:epc="http://eprints.org/ep3/control">
+
+	<phrase id="Plugin/Screen/ORCID:description">Manage user ORCID connections</phrase>
+	<phrase id="Plugin/Screen/ORCID:admin_text">Select an alternative user and click the '<epc:phrase ref="Plugin/Screen/ORCID:admin_user_change_button"/>' button to view their ORCID permissions, or amend the local permissions and click the '<epc:phrase ref="Plugin/Screen/ORCID:local_permission_button"/>' button to change the local permissions settings for the current user.</phrase>
+	<phrase id="Plugin/Screen/ORCID:/affiliations/update_select_text">Add and update affiliation details on your ORCID record</phrase>
+	<phrase id="Plugin/Screen/ORCID:/affiliations/update_select_description">Allows <epc:phrase ref="archive_name" /> to add information about your institutional affiliaton to your ORCID record and update your affiliation information which has already been added by <epc:phrase ref="archive_name" /></phrase>
+	<phrase id="Plugin/Screen/ORCID:/orcid-bio/update_select_text">Add and update affiliation details on your ORCID record</phrase>
+	<phrase id="Plugin/Screen/ORCID:/orcid-bio/update_select_description">Allows <epc:phrase ref="archive_name" /> to add information about your institutional affiliaton to your ORCID record and update your affiliation information which has already been added by <epc:phrase ref="archive_name" /></phrase>
+	<phrase id="Plugin/Screen/ORCID:/authenticate_select_description">Allows <epc:phrase ref="archive_name" /> to link your ORCID id with your <epc:phrase ref="archive_name" /> record. This is the minimum permission required and is therefore uneditable</phrase>
+	<phrase id="Plugin/Screen/ORCID:/authenticate_select_text">Connect to ORCID</phrase>
+	<phrase id="Plugin/Screen/ORCID:granted_permissions">The permissions to access your ORCID record that you have granted to <epc:phrase ref="archive_name" /> via the ORCID system are listed here: </phrase>
+	<phrase id="Plugin/Screen/ORCID:local_permission_button">Update local user permissions</phrase>
+	<phrase id="Plugin/Screen/ORCID:main_text">Clicking the &apos;<epc:phrase ref="Plugin/Screen/ORCID:local_user_connect_orcid_button" />&apos; button below will redirect you to a login/registration page on the ORCID site (<a href="http://www.orcid.org">orcid.org</a>) where you can log in to an existing ORCID account or register for one if you don't already have one. By default it will assume your institutional email address but you may change this as you wish.<br /><br />The check boxes below tailor the permissions we will request, which you can confirm on the ORCID site.</phrase>
+	<phrase id="Plugin/Screen/ORCID:permission:/affiliations/create">Create new affiliation details in your ORCID record</phrase>
+	<phrase id="Plugin/Screen/ORCID:permission:/affiliations/update">Update existing affiliation details already added to your ORCID record by <epc:phrase ref="archive_name" /></phrase>
+	<phrase id="Plugin/Screen/ORCID:permission:/orcid-bio/update">Create and update existing biographical (affiliation) details already added to your ORCID record by <epc:phrase ref="archive_name" /></phrase>
+	<phrase id="Plugin/Screen/ORCID:permission:/authenticate">Retrieve your ORCID id only</phrase>
+	<phrase id="Plugin/Screen/ORCID:permission:/orcid-profile/read-limited">Retrieve details from your ORCID profile restricted to trusted parties only</phrase>
+	<phrase id="Plugin/Screen/ORCID:permission:/orcid-works/create">Add publication details to your ORCID record</phrase>
+	<phrase id="Plugin/Screen/ORCID:permission:/orcid-works/update">Update details of your publications already added to your ORCID record by <epc:phrase ref="archive_name" /></phrase>
+	<phrase id="Plugin/Screen/ORCID:permission:/activities/update">Create and update details of your research activities (publications) already added to your ORCID record by <epc:phrase ref="archive_name" /></phrase>
+	<phrase id="Plugin/Screen/ORCID:post_approval_main_text"></phrase>
+	<phrase id="Plugin/Screen/ORCID:/orcid-profile/read-limited_select_text">Retrieve restricted details from your ORCID profile</phrase>
+	<phrase id="Plugin/Screen/ORCID:/orcid-profile/read-limited_select_description">Allows <epc:phrase ref="archive_name" /> to retrieve details from your ORCID profile that are restricted to your trusted parties only</phrase>
+	<phrase id="Plugin/Screen/ORCID:title">ORCID Connection</phrase>
+	<phrase id="Plugin/Screen/ORCID:token_expiry_date">These permissions are due to expire on <span class="expiry_date"><epc:pin name="expiry_date" /></span>.<br /><strong>Please Note:</strong> You can remove the granted permissions at any time from within your ORCID account<br /><br />We will only use these granted permissions as indicated below. To change how we use these conditions please contact <a href="mailto:{$config{ORCID_contact_email}}"><epc:print expr="$config{ORCID_contact_email}"/></a></phrase>
+	<phrase id="Plugin/Screen/ORCID:/orcid-works/update_select_text">Create and update publication details on your ORCID record</phrase>
+	<phrase id="Plugin/Screen/ORCID:/orcid-works/update_select_description">Allows <epc:phrase ref="archive_name" /> to add details of your publications to your ORCID record and update the details of publications which have already been added to your ORCID record by <epc:phrase ref="archive_name" /></phrase>
+	<phrase id="Plugin/Screen/ORCID:/activities/update_select_text">Create and update publication details on your ORCID record</phrase>
+	<phrase id="Plugin/Screen/ORCID:/activities/update_select_description">Allows <epc:phrase ref="archive_name" /> to add details of your publications to your ORCID record and update the details of publications which have already been added to your ORCID record by <epc:phrase ref="archive_name" /></phrase>
+	<phrase id="Plugin/Screen/Items:orcid_create_button">Create or Connect your ORCID ID</phrase>
+	<phrase id="Plugin/Screen/ORCID:admin_header">ORCID admin view for <epc:pin name="user_name" /></phrase>
+	<phrase id="Plugin/Screen/ORCID:admin_user_change_button">Select User</phrase>
+	<phrase id="Plugin/Screen/ORCID:user_header">ORCID details for <epc:pin name="user_name" /></phrase>
+	<phrase id="Plugin/Screen/ORCID:user_no_orcid_stored"><p>We do not currently have an ORCID ID stored for <epc:pin name="user_name" /></p></phrase>
+	<phrase id="Plugin/Screen/ORCID:user_no_auth_code_stored"><p>We have no authorisation token stored for this user</p></phrase>
+	<phrase id="Plugin/Screen/ORCID:user_orcid_stored"><p>ORCID ID held for <epc:pin name="user_name" />: <epc:pin name ="orcid_id" /></p></phrase>
+	<phrase id="Plugin/Screen/ORCID:local_user_connect_orcid_button">Connect to ORCID</phrase>
+	<phrase id="Plugin/Screen/ORCID:admin_local_user_perms_button">Update Local Permissions</phrase>
+	<phrase id="Plugin/Screen/ORCID:admin_erase_granted_permissions_button">Erase Granted Permissions (What is done cannot be undone)</phrase>
+	<phrase id="user_fieldname_orcid">ORCID id</phrase>
+	<phrase id="user_fieldname_orcid_token_expires">ORCID Access Token Expires</phrase>
+	<phrase id="Plugin/Screen/Items:orcid_create_button_title">Create or Connect to your ORCID id</phrase>
+	<phrase id="Plugin/Screen/Items:orcid_linked_button_title">Review granted ORCID Permissions</phrase>
+	<phrase id="Plugin/Screen/ORCID:updated_local_user_perms">Updated local ORCID permissions for user: <epc:pin name="name" /></phrase>
+	<phrase id="Plugin/Screen/ORCID:erased_granted_permissions">Removed granted ORCID permissions for user: <epc:pin name="name" /></phrase>
+	<phrase id="Plugin/Screen/ORCID:confirm_erase_dialog">Are you sure?\nOnce removed we will not be able to maintain the user&apos;s ORCID record until they reauthenticate with ORCID</phrase>
+	<phrase id="Plugin/Screen/ORCID:created_orcid_link">Profile successfully linked to ORCID for user: <epc:pin name="name" /></phrase>
+	<phrase id="Plugin/Screen/ORCID:failed_creating_orcid_link">ORCID AUTHENTICATION ERROR<br />We have been unable to connect your <epc:phrase ref="archive_name" /> account with your ORCID account for the following reason: <br /><strong><epc:pin name="message" /></strong><br />Please contact <a href="mailto:{$config{ORCID_contact_email}}"><epc:print expr="$config{ORCID_contact_email}"/></a> for assistance.</phrase>
+	<phrase id="Plugin/Screen/ORCID:denied_creating_orcid_link">ORCID AUTHENTICATION DENIED<br />We have been unable to link your <epc:phrase ref="archive_name" /> account with your ORCID account as the request was denied with the following message: <br /><strong><epc:pin name="message" /></strong><br />Without this connection we are unable to link your ORCID id to your publications in <epc:phrase ref="archive_name" /> or automatically maintain your publication details here or in the ORCID system. You are strongly encouraged to authorise the link by completing the steps below.<br />If you are having problems making the connection please contact <a href="mailto:{$config{ORCID_contact_email}}"><epc:print expr="$config{ORCID_contact_email}"/></a></phrase>
+	<phrase id="Plugin/Screen/ORCID:missing_client_id">Client ID not defined in plugin configuration.  please inform <a href="mailto:{$config{ORCID_contact_email}}"><epc:print expr="$config{ORCID_contact_email}"/></a></phrase>
+	<phrase id="user:workflow:stage:orcid:title">ORCID</phrase>
+
+
+</epp:phrases>
