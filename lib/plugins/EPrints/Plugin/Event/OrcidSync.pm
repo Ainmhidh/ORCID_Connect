@@ -447,7 +447,7 @@ sub collate_work
 	#add abstract, if relevant
 	if( $eprint->exists_and_set( "abstract" ) )
 	{
-		$work->{"short-description"} = $eprint->get_value( "abstract" );
+		$work->{"short-description"} = curtail_abstract( $eprint->get_value( "abstract" ) );
 	}
 
 	my $bibtex_plugin = EPrints::Plugin::Export::BibTeX->new();
@@ -677,6 +677,19 @@ sub dec_to_base_36
 		$value = int( $value / 36 );
 	}
 	return $retval;
+}
+
+sub curtail_abstract
+{
+        my ( $abstract ) = @_;
+        return $abstract unless ( length( $abstract ) > 5000 );
+        $abstract = substr($abstract,0,4990);
+        if ( $abstract =~ /(.+)\b\w+$/ )
+        {
+                $abstract = $1;
+        }
+        $abstract .= " ...";
+        return $abstract;
 }
 
 1;
